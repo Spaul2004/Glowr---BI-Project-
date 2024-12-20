@@ -1,0 +1,407 @@
+
+# Fact Table Code 
+
+let
+    Source = Excel.Workbook(File.Contents("C:\Users\User\Desktop\BI-RESUME-PROJECT\E-commerce_KPI_analysis_dataset.xlsx"), null, true),
+    Table2_Table = Source{[Item="Table2",Kind="Table"]}[Data],
+    #"Changed Type" = Table.TransformColumnTypes(Table2_Table,{{"Row ID", Int64.Type}, {"Order ID", type text}, {"Order Date", type date}, {"Customer ID", type text}, {"Segment", type text}, {"City", type text}, {"State", type text}, {"Country", type text}, {"Country latitude", type number}, {"Country longitude", type number}, {"Region", type text}, {"Market", type text}, {"Subcategory", type text}, {"Category", type text}, {"Product", type text}, {"Quantity", Int64.Type}, {"Sales", Int64.Type}, {"Discount", type number}, {"Profit", type number}}),
+    #"Added Custom Column" = Table.AddColumn(#"Changed Type", "order date", each Text.Combine({Date.ToText([Order Date], "yyyy"), "-01-", Date.ToText([Order Date], "dd")}), type text),
+    #"Removed Columns" = Table.RemoveColumns(#"Added Custom Column",{"Order Date"}),
+    #"Reordered Columns" = Table.ReorderColumns(#"Removed Columns",{"Row ID", "Order ID", "order date", "Customer ID", "Segment", "City", "State", "Country", "Country latitude", "Country longitude", "Region", "Market", "Subcategory", "Category", "Product", "Quantity", "Sales", "Discount", "Profit"}),
+    #"Capitalized Each Word" = Table.TransformColumns(#"Reordered Columns",{{"Subcategory", Text.Proper, type text}}),
+    #"Merged Queries" = Table.NestedJoin(#"Capitalized Each Word", {"Segment"}, Segment, {"Segment"}, "Segment.1", JoinKind.LeftOuter),
+    #"Expanded Segment.1" = Table.ExpandTableColumn(#"Merged Queries", "Segment.1", {"Segment Id"}, {"Segment.1.Segment Id"}),
+    #"Reordered Columns1" = Table.ReorderColumns(#"Expanded Segment.1",{"Row ID", "Order ID", "order date", "Customer ID", "Segment.1.Segment Id", "Segment", "City", "State", "Country", "Country latitude", "Country longitude", "Region", "Market", "Subcategory", "Category", "Product", "Quantity", "Sales", "Discount", "Profit"}),
+    #"Renamed Columns" = Table.RenameColumns(#"Reordered Columns1",{{"Segment.1.Segment Id", "Segment Id"}}),
+    #"Removed Columns1" = Table.RemoveColumns(#"Renamed Columns",{"Segment"}),
+    #"Reordered Columns2" = Table.ReorderColumns(#"Removed Columns1",{"Row ID", "Order ID", "Segment Id", "order date", "Customer ID", "City", "State", "Country", "Country latitude", "Country longitude", "Region", "Market", "Subcategory", "Category", "Product", "Quantity", "Sales", "Discount", "Profit"}),
+    #"Merged Queries1" = Table.NestedJoin(#"Reordered Columns2", {"City"}, City, {"City"}, "City.1", JoinKind.LeftOuter),
+    #"Expanded City.1" = Table.ExpandTableColumn(#"Merged Queries1", "City.1", {"City Id"}, {"City.1.City Id"}),
+    #"Renamed Columns1" = Table.RenameColumns(#"Expanded City.1",{{"City.1.City Id", "City Id"}}),
+    #"Reordered Columns3" = Table.ReorderColumns(#"Renamed Columns1",{"Row ID", "Order ID", "Segment Id", "order date", "Customer ID", "City Id", "City", "State", "Country", "Country latitude", "Country longitude", "Region", "Market", "Subcategory", "Category", "Product", "Quantity", "Sales", "Discount", "Profit"}),
+    #"Removed Columns2" = Table.RemoveColumns(#"Reordered Columns3",{"City"}),
+    #"Merged Queries2" = Table.NestedJoin(#"Removed Columns2", {"State"}, State, {"State"}, "State.1", JoinKind.LeftOuter),
+    #"Expanded State.1" = Table.ExpandTableColumn(#"Merged Queries2", "State.1", {"State Id"}, {"State.1.State Id"}),
+    #"Renamed Columns2" = Table.RenameColumns(#"Expanded State.1",{{"State.1.State Id", "State Id"}}),
+    #"Reordered Columns4" = Table.ReorderColumns(#"Renamed Columns2",{"Row ID", "Order ID", "Segment Id", "order date", "Customer ID", "City Id", "State Id", "State", "Country", "Country latitude", "Country longitude", "Region", "Market", "Subcategory", "Category", "Product", "Quantity", "Sales", "Discount", "Profit"}),
+    #"Removed Columns3" = Table.RemoveColumns(#"Reordered Columns4",{"State"}),
+    #"Merged Queries3" = Table.NestedJoin(#"Removed Columns3", {"Country"}, Country, {"Country"}, "Country.1", JoinKind.LeftOuter),
+    #"Expanded Country.1" = Table.ExpandTableColumn(#"Merged Queries3", "Country.1", {"Country Id"}, {"Country.1.Country Id"}),
+    #"Renamed Columns3" = Table.RenameColumns(#"Expanded Country.1",{{"Country.1.Country Id", "Country Id"}}),
+    #"Reordered Columns5" = Table.ReorderColumns(#"Renamed Columns3",{"Row ID", "Order ID", "Segment Id", "order date", "Customer ID", "City Id", "State Id", "Country Id", "Country", "Country latitude", "Country longitude", "Region", "Market", "Subcategory", "Category", "Product", "Quantity", "Sales", "Discount", "Profit"}),
+    #"Removed Columns4" = Table.RemoveColumns(#"Reordered Columns5",{"Country"}),
+    #"Merged Queries4" = Table.NestedJoin(#"Removed Columns4", {"Region"}, Region, {"Region"}, "Region.1", JoinKind.LeftOuter),
+    #"Expanded Region.1" = Table.ExpandTableColumn(#"Merged Queries4", "Region.1", {"Region Id"}, {"Region.1.Region Id"}),
+    #"Renamed Columns4" = Table.RenameColumns(#"Expanded Region.1",{{"Region.1.Region Id", "Region Id"}}),
+    #"Merged Queries5" = Table.NestedJoin(#"Renamed Columns4", {"Market"}, Market, {"Market"}, "Market.1", JoinKind.LeftOuter),
+    #"Expanded Market.1" = Table.ExpandTableColumn(#"Merged Queries5", "Market.1", {"Market Id"}, {"Market.1.Market Id"}),
+    #"Renamed Columns5" = Table.RenameColumns(#"Expanded Market.1",{{"Market.1.Market Id", "Market Id"}}),
+    #"Removed Columns5" = Table.RemoveColumns(#"Renamed Columns5",{"Region", "Market"}),
+    #"Merged Queries6" = Table.NestedJoin(#"Removed Columns5", {"Subcategory"}, #"Sub Category", {"Subcategory"}, "Sub Category", JoinKind.LeftOuter),
+    #"Expanded Sub Category" = Table.ExpandTableColumn(#"Merged Queries6", "Sub Category", {"Sub Category Id"}, {"Sub Category.Sub Category Id"}),
+    #"Renamed Columns6" = Table.RenameColumns(#"Expanded Sub Category",{{"Sub Category.Sub Category Id", "Sub-Category Id"}}),
+    #"Removed Columns6" = Table.RemoveColumns(#"Renamed Columns6",{"Subcategory"}),
+    #"Merged Queries7" = Table.NestedJoin(#"Removed Columns6", {"Category"}, Category, {"Category"}, "Category.1", JoinKind.LeftOuter),
+    #"Expanded Category.1" = Table.ExpandTableColumn(#"Merged Queries7", "Category.1", {"Category Id"}, {"Category.1.Category Id"}),
+    #"Renamed Columns7" = Table.RenameColumns(#"Expanded Category.1",{{"Category.1.Category Id", "Category Id"}}),
+    #"Merged Queries8" = Table.NestedJoin(#"Renamed Columns7", {"Product"}, Products, {"Product"}, "Products", JoinKind.LeftOuter),
+    #"Expanded Products" = Table.ExpandTableColumn(#"Merged Queries8", "Products", {"Product Id"}, {"Products.Product Id"}),
+    #"Renamed Columns8" = Table.RenameColumns(#"Expanded Products",{{"Products.Product Id", "Product Id"}}),
+    #"Removed Columns7" = Table.RemoveColumns(#"Renamed Columns8",{"Product", "Category"})
+in
+    #"Removed Columns7"
+
+
+# Segment Table Code
+
+let
+    Source = Excel.Workbook(File.Contents("C:\Users\User\Desktop\BI-RESUME-PROJECT\E-commerce_KPI_analysis_dataset.xlsx"), null, true),
+    Table2_Table = Source{[Item="Table2",Kind="Table"]}[Data],
+    #"Changed Type" = Table.TransformColumnTypes(Table2_Table,{{"Row ID", Int64.Type}, {"Order ID", type text}, {"Order Date", type date}, {"Customer ID", type text}, {"Segment", type text}, {"City", type text}, {"State", type text}, {"Country", type text}, {"Country latitude", type number}, {"Country longitude", type number}, {"Region", type text}, {"Market", type text}, {"Subcategory", type text}, {"Category", type text}, {"Product", type text}, {"Quantity", Int64.Type}, {"Sales", Int64.Type}, {"Discount", type number}, {"Profit", type number}}),
+    #"Added Custom Column" = Table.AddColumn(#"Changed Type", "order date", each Text.Combine({Date.ToText([Order Date], "yyyy"), "-01-", Date.ToText([Order Date], "dd")}), type text),
+    #"Removed Columns" = Table.RemoveColumns(#"Added Custom Column",{"Order Date"}),
+    #"Reordered Columns" = Table.ReorderColumns(#"Removed Columns",{"Row ID", "Order ID", "order date", "Customer ID", "Segment", "City", "State", "Country", "Country latitude", "Country longitude", "Region", "Market", "Subcategory", "Category", "Product", "Quantity", "Sales", "Discount", "Profit"}),
+    #"Capitalized Each Word" = Table.TransformColumns(#"Reordered Columns",{{"Subcategory", Text.Proper, type text}}),
+    #"Removed Other Columns" = Table.SelectColumns(#"Capitalized Each Word",{"Segment"}),
+    #"Removed Duplicates" = Table.Distinct(#"Removed Other Columns"),
+    #"Added Index" = Table.AddIndexColumn(#"Removed Duplicates", "Index", 1, 1, Int64.Type),
+    #"Renamed Columns" = Table.RenameColumns(#"Added Index",{{"Index", "Segment Id"}})
+in
+    #"Renamed Columns"
+
+# Date Tbale Code 
+
+let
+    Source = Excel.Workbook(File.Contents("C:\Users\User\Desktop\BI-RESUME-PROJECT\E-commerce_KPI_analysis_dataset.xlsx"), null, true),
+    Table2_Table = Source{[Item="Table2",Kind="Table"]}[Data],
+    #"Changed Type" = Table.TransformColumnTypes(Table2_Table,{{"Row ID", Int64.Type}, {"Order ID", type text}, {"Order Date", type date}, {"Customer ID", type text}, {"Segment", type text}, {"City", type text}, {"State", type text}, {"Country", type text}, {"Country latitude", type number}, {"Country longitude", type number}, {"Region", type text}, {"Market", type text}, {"Subcategory", type text}, {"Category", type text}, {"Product", type text}, {"Quantity", Int64.Type}, {"Sales", Int64.Type}, {"Discount", type number}, {"Profit", type number}}),
+    #"Added Custom Column" = Table.AddColumn(#"Changed Type", "order date", each Text.Combine({Date.ToText([Order Date], "yyyy"), "-01-", Date.ToText([Order Date], "dd")}), type text),
+    #"Removed Columns" = Table.RemoveColumns(#"Added Custom Column",{"Order Date"}),
+    #"Reordered Columns" = Table.ReorderColumns(#"Removed Columns",{"Row ID", "Order ID", "order date", "Customer ID", "Segment", "City", "State", "Country", "Country latitude", "Country longitude", "Region", "Market", "Subcategory", "Category", "Product", "Quantity", "Sales", "Discount", "Profit"}),
+    #"Capitalized Each Word" = Table.TransformColumns(#"Reordered Columns",{{"Subcategory", Text.Proper, type text}}),
+    #"Merged Queries" = Table.NestedJoin(#"Capitalized Each Word", {"Segment"}, Segment, {"Segment"}, "Segment.1", JoinKind.LeftOuter),
+    #"Expanded Segment.1" = Table.ExpandTableColumn(#"Merged Queries", "Segment.1", {"Segment Id"}, {"Segment.1.Segment Id"}),
+    #"Reordered Columns1" = Table.ReorderColumns(#"Expanded Segment.1",{"Row ID", "Order ID", "order date", "Customer ID", "Segment.1.Segment Id", "Segment", "City", "State", "Country", "Country latitude", "Country longitude", "Region", "Market", "Subcategory", "Category", "Product", "Quantity", "Sales", "Discount", "Profit"}),
+    #"Renamed Columns" = Table.RenameColumns(#"Reordered Columns1",{{"Segment.1.Segment Id", "Segment Id"}}),
+    #"Removed Columns1" = Table.RemoveColumns(#"Renamed Columns",{"Segment"}),
+    #"Reordered Columns2" = Table.ReorderColumns(#"Removed Columns1",{"Row ID", "Order ID", "Segment Id", "order date", "Customer ID", "City", "State", "Country", "Country latitude", "Country longitude", "Region", "Market", "Subcategory", "Category", "Product", "Quantity", "Sales", "Discount", "Profit"}),
+    #"Removed Other Columns" = Table.SelectColumns(#"Reordered Columns2",{"order date"}),
+    #"Removed Duplicates" = Table.Distinct(#"Removed Other Columns"),
+    #"Duplicated Column" = Table.DuplicateColumn(#"Removed Duplicates", "order date", "order date - Copy"),
+    #"Renamed Columns1" = Table.RenameColumns(#"Duplicated Column",{{"order date - Copy", "Order Year"}}),
+    #"Split Column by Delimiter" = Table.SplitColumn(#"Renamed Columns1", "Order Year", Splitter.SplitTextByEachDelimiter({"-"}, QuoteStyle.Csv, false), {"Order Year.1", "Order Year.2"}),
+    #"Changed Type1" = Table.TransformColumnTypes(#"Split Column by Delimiter",{{"Order Year.1", Int64.Type}, {"Order Year.2", type text}}),
+    #"Renamed Columns2" = Table.RenameColumns(#"Changed Type1",{{"Order Year.1", "Order Year"}}),
+    #"Split Column by Delimiter1" = Table.SplitColumn(#"Renamed Columns2", "Order Year.2", Splitter.SplitTextByEachDelimiter({"-"}, QuoteStyle.Csv, true), {"Order Year.2.1", "Order Year.2.2"}),
+    #"Changed Type2" = Table.TransformColumnTypes(#"Split Column by Delimiter1",{{"Order Year.2.1", Int64.Type}, {"Order Year.2.2", Int64.Type}}),
+    #"Renamed Columns3" = Table.RenameColumns(#"Changed Type2",{{"Order Year.2.1", "Order Month"}, {"Order Year.2.2", "Order Day"}})
+in
+    #"Renamed Columns3"
+
+
+
+# City Table  Code 
+
+let
+    Source = Excel.Workbook(File.Contents("C:\Users\User\Desktop\BI-RESUME-PROJECT\E-commerce_KPI_analysis_dataset.xlsx"), null, true),
+    Table2_Table = Source{[Item="Table2",Kind="Table"]}[Data],
+    #"Changed Type" = Table.TransformColumnTypes(Table2_Table,{{"Row ID", Int64.Type}, {"Order ID", type text}, {"Order Date", type date}, {"Customer ID", type text}, {"Segment", type text}, {"City", type text}, {"State", type text}, {"Country", type text}, {"Country latitude", type number}, {"Country longitude", type number}, {"Region", type text}, {"Market", type text}, {"Subcategory", type text}, {"Category", type text}, {"Product", type text}, {"Quantity", Int64.Type}, {"Sales", Int64.Type}, {"Discount", type number}, {"Profit", type number}}),
+    #"Added Custom Column" = Table.AddColumn(#"Changed Type", "order date", each Text.Combine({Date.ToText([Order Date], "yyyy"), "-01-", Date.ToText([Order Date], "dd")}), type text),
+    #"Removed Columns" = Table.RemoveColumns(#"Added Custom Column",{"Order Date"}),
+    #"Reordered Columns" = Table.ReorderColumns(#"Removed Columns",{"Row ID", "Order ID", "order date", "Customer ID", "Segment", "City", "State", "Country", "Country latitude", "Country longitude", "Region", "Market", "Subcategory", "Category", "Product", "Quantity", "Sales", "Discount", "Profit"}),
+    #"Capitalized Each Word" = Table.TransformColumns(#"Reordered Columns",{{"Subcategory", Text.Proper, type text}}),
+    #"Merged Queries" = Table.NestedJoin(#"Capitalized Each Word", {"Segment"}, Segment, {"Segment"}, "Segment.1", JoinKind.LeftOuter),
+    #"Expanded Segment.1" = Table.ExpandTableColumn(#"Merged Queries", "Segment.1", {"Segment Id"}, {"Segment.1.Segment Id"}),
+    #"Reordered Columns1" = Table.ReorderColumns(#"Expanded Segment.1",{"Row ID", "Order ID", "order date", "Customer ID", "Segment.1.Segment Id", "Segment", "City", "State", "Country", "Country latitude", "Country longitude", "Region", "Market", "Subcategory", "Category", "Product", "Quantity", "Sales", "Discount", "Profit"}),
+    #"Renamed Columns" = Table.RenameColumns(#"Reordered Columns1",{{"Segment.1.Segment Id", "Segment Id"}}),
+    #"Removed Columns1" = Table.RemoveColumns(#"Renamed Columns",{"Segment"}),
+    #"Reordered Columns2" = Table.ReorderColumns(#"Removed Columns1",{"Row ID", "Order ID", "Segment Id", "order date", "Customer ID", "City", "State", "Country", "Country latitude", "Country longitude", "Region", "Market", "Subcategory", "Category", "Product", "Quantity", "Sales", "Discount", "Profit"}),
+    #"Removed Other Columns" = Table.SelectColumns(#"Reordered Columns2",{"City"}),
+    #"Removed Duplicates" = Table.Distinct(#"Removed Other Columns"),
+    #"Added Index" = Table.AddIndexColumn(#"Removed Duplicates", "Index", 1, 1, Int64.Type),
+    #"Renamed Columns1" = Table.RenameColumns(#"Added Index",{{"Index", "City Id"}})
+in
+    #"Renamed Columns1"
+
+
+# State Table Code 
+
+let
+    Source = Excel.Workbook(File.Contents("C:\Users\User\Desktop\BI-RESUME-PROJECT\E-commerce_KPI_analysis_dataset.xlsx"), null, true),
+    Table2_Table = Source{[Item="Table2",Kind="Table"]}[Data],
+    #"Changed Type" = Table.TransformColumnTypes(Table2_Table,{{"Row ID", Int64.Type}, {"Order ID", type text}, {"Order Date", type date}, {"Customer ID", type text}, {"Segment", type text}, {"City", type text}, {"State", type text}, {"Country", type text}, {"Country latitude", type number}, {"Country longitude", type number}, {"Region", type text}, {"Market", type text}, {"Subcategory", type text}, {"Category", type text}, {"Product", type text}, {"Quantity", Int64.Type}, {"Sales", Int64.Type}, {"Discount", type number}, {"Profit", type number}}),
+    #"Added Custom Column" = Table.AddColumn(#"Changed Type", "order date", each Text.Combine({Date.ToText([Order Date], "yyyy"), "-01-", Date.ToText([Order Date], "dd")}), type text),
+    #"Removed Columns" = Table.RemoveColumns(#"Added Custom Column",{"Order Date"}),
+    #"Reordered Columns" = Table.ReorderColumns(#"Removed Columns",{"Row ID", "Order ID", "order date", "Customer ID", "Segment", "City", "State", "Country", "Country latitude", "Country longitude", "Region", "Market", "Subcategory", "Category", "Product", "Quantity", "Sales", "Discount", "Profit"}),
+    #"Capitalized Each Word" = Table.TransformColumns(#"Reordered Columns",{{"Subcategory", Text.Proper, type text}}),
+    #"Merged Queries" = Table.NestedJoin(#"Capitalized Each Word", {"Segment"}, Segment, {"Segment"}, "Segment.1", JoinKind.LeftOuter),
+    #"Expanded Segment.1" = Table.ExpandTableColumn(#"Merged Queries", "Segment.1", {"Segment Id"}, {"Segment.1.Segment Id"}),
+    #"Reordered Columns1" = Table.ReorderColumns(#"Expanded Segment.1",{"Row ID", "Order ID", "order date", "Customer ID", "Segment.1.Segment Id", "Segment", "City", "State", "Country", "Country latitude", "Country longitude", "Region", "Market", "Subcategory", "Category", "Product", "Quantity", "Sales", "Discount", "Profit"}),
+    #"Renamed Columns" = Table.RenameColumns(#"Reordered Columns1",{{"Segment.1.Segment Id", "Segment Id"}}),
+    #"Removed Columns1" = Table.RemoveColumns(#"Renamed Columns",{"Segment"}),
+    #"Reordered Columns2" = Table.ReorderColumns(#"Removed Columns1",{"Row ID", "Order ID", "Segment Id", "order date", "Customer ID", "City", "State", "Country", "Country latitude", "Country longitude", "Region", "Market", "Subcategory", "Category", "Product", "Quantity", "Sales", "Discount", "Profit"}),
+    #"Merged Queries1" = Table.NestedJoin(#"Reordered Columns2", {"City"}, City, {"City"}, "City.1", JoinKind.LeftOuter),
+    #"Expanded City.1" = Table.ExpandTableColumn(#"Merged Queries1", "City.1", {"City Id"}, {"City.1.City Id"}),
+    #"Renamed Columns1" = Table.RenameColumns(#"Expanded City.1",{{"City.1.City Id", "City Id"}}),
+    #"Reordered Columns3" = Table.ReorderColumns(#"Renamed Columns1",{"Row ID", "Order ID", "Segment Id", "order date", "Customer ID", "City Id", "City", "State", "Country", "Country latitude", "Country longitude", "Region", "Market", "Subcategory", "Category", "Product", "Quantity", "Sales", "Discount", "Profit"}),
+    #"Removed Columns2" = Table.RemoveColumns(#"Reordered Columns3",{"City"}),
+    #"Removed Other Columns" = Table.SelectColumns(#"Removed Columns2",{"State"}),
+    #"Removed Duplicates" = Table.Distinct(#"Removed Other Columns"),
+    #"Added Index" = Table.AddIndexColumn(#"Removed Duplicates", "Index", 1, 1, Int64.Type),
+    #"Renamed Columns2" = Table.RenameColumns(#"Added Index",{{"Index", "State Id"}})
+in
+    #"Renamed Columns2"
+
+
+
+# Country Table Code
+
+let
+    Source = Excel.Workbook(File.Contents("C:\Users\User\Desktop\BI-RESUME-PROJECT\E-commerce_KPI_analysis_dataset.xlsx"), null, true),
+    Table2_Table = Source{[Item="Table2",Kind="Table"]}[Data],
+    #"Changed Type" = Table.TransformColumnTypes(Table2_Table,{{"Row ID", Int64.Type}, {"Order ID", type text}, {"Order Date", type date}, {"Customer ID", type text}, {"Segment", type text}, {"City", type text}, {"State", type text}, {"Country", type text}, {"Country latitude", type number}, {"Country longitude", type number}, {"Region", type text}, {"Market", type text}, {"Subcategory", type text}, {"Category", type text}, {"Product", type text}, {"Quantity", Int64.Type}, {"Sales", Int64.Type}, {"Discount", type number}, {"Profit", type number}}),
+    #"Added Custom Column" = Table.AddColumn(#"Changed Type", "order date", each Text.Combine({Date.ToText([Order Date], "yyyy"), "-01-", Date.ToText([Order Date], "dd")}), type text),
+    #"Removed Columns" = Table.RemoveColumns(#"Added Custom Column",{"Order Date"}),
+    #"Reordered Columns" = Table.ReorderColumns(#"Removed Columns",{"Row ID", "Order ID", "order date", "Customer ID", "Segment", "City", "State", "Country", "Country latitude", "Country longitude", "Region", "Market", "Subcategory", "Category", "Product", "Quantity", "Sales", "Discount", "Profit"}),
+    #"Capitalized Each Word" = Table.TransformColumns(#"Reordered Columns",{{"Subcategory", Text.Proper, type text}}),
+    #"Merged Queries" = Table.NestedJoin(#"Capitalized Each Word", {"Segment"}, Segment, {"Segment"}, "Segment.1", JoinKind.LeftOuter),
+    #"Expanded Segment.1" = Table.ExpandTableColumn(#"Merged Queries", "Segment.1", {"Segment Id"}, {"Segment.1.Segment Id"}),
+    #"Reordered Columns1" = Table.ReorderColumns(#"Expanded Segment.1",{"Row ID", "Order ID", "order date", "Customer ID", "Segment.1.Segment Id", "Segment", "City", "State", "Country", "Country latitude", "Country longitude", "Region", "Market", "Subcategory", "Category", "Product", "Quantity", "Sales", "Discount", "Profit"}),
+    #"Renamed Columns" = Table.RenameColumns(#"Reordered Columns1",{{"Segment.1.Segment Id", "Segment Id"}}),
+    #"Removed Columns1" = Table.RemoveColumns(#"Renamed Columns",{"Segment"}),
+    #"Reordered Columns2" = Table.ReorderColumns(#"Removed Columns1",{"Row ID", "Order ID", "Segment Id", "order date", "Customer ID", "City", "State", "Country", "Country latitude", "Country longitude", "Region", "Market", "Subcategory", "Category", "Product", "Quantity", "Sales", "Discount", "Profit"}),
+    #"Merged Queries1" = Table.NestedJoin(#"Reordered Columns2", {"City"}, City, {"City"}, "City.1", JoinKind.LeftOuter),
+    #"Expanded City.1" = Table.ExpandTableColumn(#"Merged Queries1", "City.1", {"City Id"}, {"City.1.City Id"}),
+    #"Renamed Columns1" = Table.RenameColumns(#"Expanded City.1",{{"City.1.City Id", "City Id"}}),
+    #"Reordered Columns3" = Table.ReorderColumns(#"Renamed Columns1",{"Row ID", "Order ID", "Segment Id", "order date", "Customer ID", "City Id", "City", "State", "Country", "Country latitude", "Country longitude", "Region", "Market", "Subcategory", "Category", "Product", "Quantity", "Sales", "Discount", "Profit"}),
+    #"Removed Columns2" = Table.RemoveColumns(#"Reordered Columns3",{"City"}),
+    #"Merged Queries2" = Table.NestedJoin(#"Removed Columns2", {"State"}, State, {"State"}, "State.1", JoinKind.LeftOuter),
+    #"Expanded State.1" = Table.ExpandTableColumn(#"Merged Queries2", "State.1", {"State Id"}, {"State.1.State Id"}),
+    #"Renamed Columns2" = Table.RenameColumns(#"Expanded State.1",{{"State.1.State Id", "State Id"}}),
+    #"Reordered Columns4" = Table.ReorderColumns(#"Renamed Columns2",{"Row ID", "Order ID", "Segment Id", "order date", "Customer ID", "City Id", "State Id", "State", "Country", "Country latitude", "Country longitude", "Region", "Market", "Subcategory", "Category", "Product", "Quantity", "Sales", "Discount", "Profit"}),
+    #"Removed Columns3" = Table.RemoveColumns(#"Reordered Columns4",{"State"}),
+    #"Removed Other Columns" = Table.SelectColumns(#"Removed Columns3",{"Country"}),
+    #"Removed Duplicates" = Table.Distinct(#"Removed Other Columns"),
+    #"Added Index" = Table.AddIndexColumn(#"Removed Duplicates", "Index", 1, 1, Int64.Type),
+    #"Renamed Columns3" = Table.RenameColumns(#"Added Index",{{"Index", "Country Id"}})
+in
+    #"Renamed Columns3"
+
+# Region Table Code 
+
+let
+    Source = Excel.Workbook(File.Contents("C:\Users\User\Desktop\BI-RESUME-PROJECT\E-commerce_KPI_analysis_dataset.xlsx"), null, true),
+    Table2_Table = Source{[Item="Table2",Kind="Table"]}[Data],
+    #"Changed Type" = Table.TransformColumnTypes(Table2_Table,{{"Row ID", Int64.Type}, {"Order ID", type text}, {"Order Date", type date}, {"Customer ID", type text}, {"Segment", type text}, {"City", type text}, {"State", type text}, {"Country", type text}, {"Country latitude", type number}, {"Country longitude", type number}, {"Region", type text}, {"Market", type text}, {"Subcategory", type text}, {"Category", type text}, {"Product", type text}, {"Quantity", Int64.Type}, {"Sales", Int64.Type}, {"Discount", type number}, {"Profit", type number}}),
+    #"Added Custom Column" = Table.AddColumn(#"Changed Type", "order date", each Text.Combine({Date.ToText([Order Date], "yyyy"), "-01-", Date.ToText([Order Date], "dd")}), type text),
+    #"Removed Columns" = Table.RemoveColumns(#"Added Custom Column",{"Order Date"}),
+    #"Reordered Columns" = Table.ReorderColumns(#"Removed Columns",{"Row ID", "Order ID", "order date", "Customer ID", "Segment", "City", "State", "Country", "Country latitude", "Country longitude", "Region", "Market", "Subcategory", "Category", "Product", "Quantity", "Sales", "Discount", "Profit"}),
+    #"Capitalized Each Word" = Table.TransformColumns(#"Reordered Columns",{{"Subcategory", Text.Proper, type text}}),
+    #"Merged Queries" = Table.NestedJoin(#"Capitalized Each Word", {"Segment"}, Segment, {"Segment"}, "Segment.1", JoinKind.LeftOuter),
+    #"Expanded Segment.1" = Table.ExpandTableColumn(#"Merged Queries", "Segment.1", {"Segment Id"}, {"Segment.1.Segment Id"}),
+    #"Reordered Columns1" = Table.ReorderColumns(#"Expanded Segment.1",{"Row ID", "Order ID", "order date", "Customer ID", "Segment.1.Segment Id", "Segment", "City", "State", "Country", "Country latitude", "Country longitude", "Region", "Market", "Subcategory", "Category", "Product", "Quantity", "Sales", "Discount", "Profit"}),
+    #"Renamed Columns" = Table.RenameColumns(#"Reordered Columns1",{{"Segment.1.Segment Id", "Segment Id"}}),
+    #"Removed Columns1" = Table.RemoveColumns(#"Renamed Columns",{"Segment"}),
+    #"Reordered Columns2" = Table.ReorderColumns(#"Removed Columns1",{"Row ID", "Order ID", "Segment Id", "order date", "Customer ID", "City", "State", "Country", "Country latitude", "Country longitude", "Region", "Market", "Subcategory", "Category", "Product", "Quantity", "Sales", "Discount", "Profit"}),
+    #"Merged Queries1" = Table.NestedJoin(#"Reordered Columns2", {"City"}, City, {"City"}, "City.1", JoinKind.LeftOuter),
+    #"Expanded City.1" = Table.ExpandTableColumn(#"Merged Queries1", "City.1", {"City Id"}, {"City.1.City Id"}),
+    #"Renamed Columns1" = Table.RenameColumns(#"Expanded City.1",{{"City.1.City Id", "City Id"}}),
+    #"Reordered Columns3" = Table.ReorderColumns(#"Renamed Columns1",{"Row ID", "Order ID", "Segment Id", "order date", "Customer ID", "City Id", "City", "State", "Country", "Country latitude", "Country longitude", "Region", "Market", "Subcategory", "Category", "Product", "Quantity", "Sales", "Discount", "Profit"}),
+    #"Removed Columns2" = Table.RemoveColumns(#"Reordered Columns3",{"City"}),
+    #"Merged Queries2" = Table.NestedJoin(#"Removed Columns2", {"State"}, State, {"State"}, "State.1", JoinKind.LeftOuter),
+    #"Expanded State.1" = Table.ExpandTableColumn(#"Merged Queries2", "State.1", {"State Id"}, {"State.1.State Id"}),
+    #"Renamed Columns2" = Table.RenameColumns(#"Expanded State.1",{{"State.1.State Id", "State Id"}}),
+    #"Reordered Columns4" = Table.ReorderColumns(#"Renamed Columns2",{"Row ID", "Order ID", "Segment Id", "order date", "Customer ID", "City Id", "State Id", "State", "Country", "Country latitude", "Country longitude", "Region", "Market", "Subcategory", "Category", "Product", "Quantity", "Sales", "Discount", "Profit"}),
+    #"Removed Columns3" = Table.RemoveColumns(#"Reordered Columns4",{"State"}),
+    #"Merged Queries3" = Table.NestedJoin(#"Removed Columns3", {"Country"}, Country, {"Country"}, "Country.1", JoinKind.LeftOuter),
+    #"Expanded Country.1" = Table.ExpandTableColumn(#"Merged Queries3", "Country.1", {"Country Id"}, {"Country.1.Country Id"}),
+    #"Renamed Columns3" = Table.RenameColumns(#"Expanded Country.1",{{"Country.1.Country Id", "Country Id"}}),
+    #"Reordered Columns5" = Table.ReorderColumns(#"Renamed Columns3",{"Row ID", "Order ID", "Segment Id", "order date", "Customer ID", "City Id", "State Id", "Country Id", "Country", "Country latitude", "Country longitude", "Region", "Market", "Subcategory", "Category", "Product", "Quantity", "Sales", "Discount", "Profit"}),
+    #"Removed Columns4" = Table.RemoveColumns(#"Reordered Columns5",{"Country"}),
+    #"Removed Other Columns" = Table.SelectColumns(#"Removed Columns4",{"Region"}),
+    #"Removed Duplicates" = Table.Distinct(#"Removed Other Columns"),
+    #"Added Index" = Table.AddIndexColumn(#"Removed Duplicates", "Index", 1, 1, Int64.Type),
+    #"Renamed Columns4" = Table.RenameColumns(#"Added Index",{{"Index", "Region Id"}})
+in
+    #"Renamed Columns4"
+
+# Market Table Code
+
+let
+    Source = Excel.Workbook(File.Contents("C:\Users\User\Desktop\BI-RESUME-PROJECT\E-commerce_KPI_analysis_dataset.xlsx"), null, true),
+    Table2_Table = Source{[Item="Table2",Kind="Table"]}[Data],
+    #"Changed Type" = Table.TransformColumnTypes(Table2_Table,{{"Row ID", Int64.Type}, {"Order ID", type text}, {"Order Date", type date}, {"Customer ID", type text}, {"Segment", type text}, {"City", type text}, {"State", type text}, {"Country", type text}, {"Country latitude", type number}, {"Country longitude", type number}, {"Region", type text}, {"Market", type text}, {"Subcategory", type text}, {"Category", type text}, {"Product", type text}, {"Quantity", Int64.Type}, {"Sales", Int64.Type}, {"Discount", type number}, {"Profit", type number}}),
+    #"Added Custom Column" = Table.AddColumn(#"Changed Type", "order date", each Text.Combine({Date.ToText([Order Date], "yyyy"), "-01-", Date.ToText([Order Date], "dd")}), type text),
+    #"Removed Columns" = Table.RemoveColumns(#"Added Custom Column",{"Order Date"}),
+    #"Reordered Columns" = Table.ReorderColumns(#"Removed Columns",{"Row ID", "Order ID", "order date", "Customer ID", "Segment", "City", "State", "Country", "Country latitude", "Country longitude", "Region", "Market", "Subcategory", "Category", "Product", "Quantity", "Sales", "Discount", "Profit"}),
+    #"Capitalized Each Word" = Table.TransformColumns(#"Reordered Columns",{{"Subcategory", Text.Proper, type text}}),
+    #"Merged Queries" = Table.NestedJoin(#"Capitalized Each Word", {"Segment"}, Segment, {"Segment"}, "Segment.1", JoinKind.LeftOuter),
+    #"Expanded Segment.1" = Table.ExpandTableColumn(#"Merged Queries", "Segment.1", {"Segment Id"}, {"Segment.1.Segment Id"}),
+    #"Reordered Columns1" = Table.ReorderColumns(#"Expanded Segment.1",{"Row ID", "Order ID", "order date", "Customer ID", "Segment.1.Segment Id", "Segment", "City", "State", "Country", "Country latitude", "Country longitude", "Region", "Market", "Subcategory", "Category", "Product", "Quantity", "Sales", "Discount", "Profit"}),
+    #"Renamed Columns" = Table.RenameColumns(#"Reordered Columns1",{{"Segment.1.Segment Id", "Segment Id"}}),
+    #"Removed Columns1" = Table.RemoveColumns(#"Renamed Columns",{"Segment"}),
+    #"Reordered Columns2" = Table.ReorderColumns(#"Removed Columns1",{"Row ID", "Order ID", "Segment Id", "order date", "Customer ID", "City", "State", "Country", "Country latitude", "Country longitude", "Region", "Market", "Subcategory", "Category", "Product", "Quantity", "Sales", "Discount", "Profit"}),
+    #"Merged Queries1" = Table.NestedJoin(#"Reordered Columns2", {"City"}, City, {"City"}, "City.1", JoinKind.LeftOuter),
+    #"Expanded City.1" = Table.ExpandTableColumn(#"Merged Queries1", "City.1", {"City Id"}, {"City.1.City Id"}),
+    #"Renamed Columns1" = Table.RenameColumns(#"Expanded City.1",{{"City.1.City Id", "City Id"}}),
+    #"Reordered Columns3" = Table.ReorderColumns(#"Renamed Columns1",{"Row ID", "Order ID", "Segment Id", "order date", "Customer ID", "City Id", "City", "State", "Country", "Country latitude", "Country longitude", "Region", "Market", "Subcategory", "Category", "Product", "Quantity", "Sales", "Discount", "Profit"}),
+    #"Removed Columns2" = Table.RemoveColumns(#"Reordered Columns3",{"City"}),
+    #"Merged Queries2" = Table.NestedJoin(#"Removed Columns2", {"State"}, State, {"State"}, "State.1", JoinKind.LeftOuter),
+    #"Expanded State.1" = Table.ExpandTableColumn(#"Merged Queries2", "State.1", {"State Id"}, {"State.1.State Id"}),
+    #"Renamed Columns2" = Table.RenameColumns(#"Expanded State.1",{{"State.1.State Id", "State Id"}}),
+    #"Reordered Columns4" = Table.ReorderColumns(#"Renamed Columns2",{"Row ID", "Order ID", "Segment Id", "order date", "Customer ID", "City Id", "State Id", "State", "Country", "Country latitude", "Country longitude", "Region", "Market", "Subcategory", "Category", "Product", "Quantity", "Sales", "Discount", "Profit"}),
+    #"Removed Columns3" = Table.RemoveColumns(#"Reordered Columns4",{"State"}),
+    #"Merged Queries3" = Table.NestedJoin(#"Removed Columns3", {"Country"}, Country, {"Country"}, "Country.1", JoinKind.LeftOuter),
+    #"Expanded Country.1" = Table.ExpandTableColumn(#"Merged Queries3", "Country.1", {"Country Id"}, {"Country.1.Country Id"}),
+    #"Renamed Columns3" = Table.RenameColumns(#"Expanded Country.1",{{"Country.1.Country Id", "Country Id"}}),
+    #"Reordered Columns5" = Table.ReorderColumns(#"Renamed Columns3",{"Row ID", "Order ID", "Segment Id", "order date", "Customer ID", "City Id", "State Id", "Country Id", "Country", "Country latitude", "Country longitude", "Region", "Market", "Subcategory", "Category", "Product", "Quantity", "Sales", "Discount", "Profit"}),
+    #"Removed Columns4" = Table.RemoveColumns(#"Reordered Columns5",{"Country"}),
+    #"Merged Queries4" = Table.NestedJoin(#"Removed Columns4", {"Region"}, Region, {"Region"}, "Region.1", JoinKind.LeftOuter),
+    #"Expanded Region.1" = Table.ExpandTableColumn(#"Merged Queries4", "Region.1", {"Region Id"}, {"Region.1.Region Id"}),
+    #"Renamed Columns4" = Table.RenameColumns(#"Expanded Region.1",{{"Region.1.Region Id", "Region Id"}}),
+    #"Removed Other Columns" = Table.SelectColumns(#"Renamed Columns4",{"Market"}),
+    #"Removed Duplicates" = Table.Distinct(#"Removed Other Columns"),
+    #"Added Index" = Table.AddIndexColumn(#"Removed Duplicates", "Index", 1, 1, Int64.Type),
+    #"Renamed Columns5" = Table.RenameColumns(#"Added Index",{{"Index", "Market Id"}})
+in
+    #"Renamed Columns5"
+
+
+# Sub Category Code 
+
+let
+    Source = Excel.Workbook(File.Contents("C:\Users\User\Desktop\BI-RESUME-PROJECT\E-commerce_KPI_analysis_dataset.xlsx"), null, true),
+    Table2_Table = Source{[Item="Table2",Kind="Table"]}[Data],
+    #"Changed Type" = Table.TransformColumnTypes(Table2_Table,{{"Row ID", Int64.Type}, {"Order ID", type text}, {"Order Date", type date}, {"Customer ID", type text}, {"Segment", type text}, {"City", type text}, {"State", type text}, {"Country", type text}, {"Country latitude", type number}, {"Country longitude", type number}, {"Region", type text}, {"Market", type text}, {"Subcategory", type text}, {"Category", type text}, {"Product", type text}, {"Quantity", Int64.Type}, {"Sales", Int64.Type}, {"Discount", type number}, {"Profit", type number}}),
+    #"Added Custom Column" = Table.AddColumn(#"Changed Type", "order date", each Text.Combine({Date.ToText([Order Date], "yyyy"), "-01-", Date.ToText([Order Date], "dd")}), type text),
+    #"Removed Columns" = Table.RemoveColumns(#"Added Custom Column",{"Order Date"}),
+    #"Reordered Columns" = Table.ReorderColumns(#"Removed Columns",{"Row ID", "Order ID", "order date", "Customer ID", "Segment", "City", "State", "Country", "Country latitude", "Country longitude", "Region", "Market", "Subcategory", "Category", "Product", "Quantity", "Sales", "Discount", "Profit"}),
+    #"Capitalized Each Word" = Table.TransformColumns(#"Reordered Columns",{{"Subcategory", Text.Proper, type text}}),
+    #"Merged Queries" = Table.NestedJoin(#"Capitalized Each Word", {"Segment"}, Segment, {"Segment"}, "Segment.1", JoinKind.LeftOuter),
+    #"Expanded Segment.1" = Table.ExpandTableColumn(#"Merged Queries", "Segment.1", {"Segment Id"}, {"Segment.1.Segment Id"}),
+    #"Reordered Columns1" = Table.ReorderColumns(#"Expanded Segment.1",{"Row ID", "Order ID", "order date", "Customer ID", "Segment.1.Segment Id", "Segment", "City", "State", "Country", "Country latitude", "Country longitude", "Region", "Market", "Subcategory", "Category", "Product", "Quantity", "Sales", "Discount", "Profit"}),
+    #"Renamed Columns" = Table.RenameColumns(#"Reordered Columns1",{{"Segment.1.Segment Id", "Segment Id"}}),
+    #"Removed Columns1" = Table.RemoveColumns(#"Renamed Columns",{"Segment"}),
+    #"Reordered Columns2" = Table.ReorderColumns(#"Removed Columns1",{"Row ID", "Order ID", "Segment Id", "order date", "Customer ID", "City", "State", "Country", "Country latitude", "Country longitude", "Region", "Market", "Subcategory", "Category", "Product", "Quantity", "Sales", "Discount", "Profit"}),
+    #"Merged Queries1" = Table.NestedJoin(#"Reordered Columns2", {"City"}, City, {"City"}, "City.1", JoinKind.LeftOuter),
+    #"Expanded City.1" = Table.ExpandTableColumn(#"Merged Queries1", "City.1", {"City Id"}, {"City.1.City Id"}),
+    #"Renamed Columns1" = Table.RenameColumns(#"Expanded City.1",{{"City.1.City Id", "City Id"}}),
+    #"Reordered Columns3" = Table.ReorderColumns(#"Renamed Columns1",{"Row ID", "Order ID", "Segment Id", "order date", "Customer ID", "City Id", "City", "State", "Country", "Country latitude", "Country longitude", "Region", "Market", "Subcategory", "Category", "Product", "Quantity", "Sales", "Discount", "Profit"}),
+    #"Removed Columns2" = Table.RemoveColumns(#"Reordered Columns3",{"City"}),
+    #"Merged Queries2" = Table.NestedJoin(#"Removed Columns2", {"State"}, State, {"State"}, "State.1", JoinKind.LeftOuter),
+    #"Expanded State.1" = Table.ExpandTableColumn(#"Merged Queries2", "State.1", {"State Id"}, {"State.1.State Id"}),
+    #"Renamed Columns2" = Table.RenameColumns(#"Expanded State.1",{{"State.1.State Id", "State Id"}}),
+    #"Reordered Columns4" = Table.ReorderColumns(#"Renamed Columns2",{"Row ID", "Order ID", "Segment Id", "order date", "Customer ID", "City Id", "State Id", "State", "Country", "Country latitude", "Country longitude", "Region", "Market", "Subcategory", "Category", "Product", "Quantity", "Sales", "Discount", "Profit"}),
+    #"Removed Columns3" = Table.RemoveColumns(#"Reordered Columns4",{"State"}),
+    #"Merged Queries3" = Table.NestedJoin(#"Removed Columns3", {"Country"}, Country, {"Country"}, "Country.1", JoinKind.LeftOuter),
+    #"Expanded Country.1" = Table.ExpandTableColumn(#"Merged Queries3", "Country.1", {"Country Id"}, {"Country.1.Country Id"}),
+    #"Renamed Columns3" = Table.RenameColumns(#"Expanded Country.1",{{"Country.1.Country Id", "Country Id"}}),
+    #"Reordered Columns5" = Table.ReorderColumns(#"Renamed Columns3",{"Row ID", "Order ID", "Segment Id", "order date", "Customer ID", "City Id", "State Id", "Country Id", "Country", "Country latitude", "Country longitude", "Region", "Market", "Subcategory", "Category", "Product", "Quantity", "Sales", "Discount", "Profit"}),
+    #"Removed Columns4" = Table.RemoveColumns(#"Reordered Columns5",{"Country"}),
+    #"Merged Queries4" = Table.NestedJoin(#"Removed Columns4", {"Region"}, Region, {"Region"}, "Region.1", JoinKind.LeftOuter),
+    #"Expanded Region.1" = Table.ExpandTableColumn(#"Merged Queries4", "Region.1", {"Region Id"}, {"Region.1.Region Id"}),
+    #"Renamed Columns4" = Table.RenameColumns(#"Expanded Region.1",{{"Region.1.Region Id", "Region Id"}}),
+    #"Merged Queries5" = Table.NestedJoin(#"Renamed Columns4", {"Market"}, Market, {"Market"}, "Market.1", JoinKind.LeftOuter),
+    #"Expanded Market.1" = Table.ExpandTableColumn(#"Merged Queries5", "Market.1", {"Market Id"}, {"Market.1.Market Id"}),
+    #"Renamed Columns5" = Table.RenameColumns(#"Expanded Market.1",{{"Market.1.Market Id", "Market Id"}}),
+    #"Removed Columns5" = Table.RemoveColumns(#"Renamed Columns5",{"Region", "Market"}),
+    #"Removed Other Columns" = Table.SelectColumns(#"Removed Columns5",{"Subcategory"}),
+    #"Removed Duplicates" = Table.Distinct(#"Removed Other Columns"),
+    #"Added Index" = Table.AddIndexColumn(#"Removed Duplicates", "Index", 1, 1, Int64.Type),
+    #"Renamed Columns6" = Table.RenameColumns(#"Added Index",{{"Index", "Sub Category Id"}})
+in
+    #"Renamed Columns6"
+
+
+# Category Tabel Code 
+
+let
+    Source = Excel.Workbook(File.Contents("C:\Users\User\Desktop\BI-RESUME-PROJECT\E-commerce_KPI_analysis_dataset.xlsx"), null, true),
+    Table2_Table = Source{[Item="Table2",Kind="Table"]}[Data],
+    #"Changed Type" = Table.TransformColumnTypes(Table2_Table,{{"Row ID", Int64.Type}, {"Order ID", type text}, {"Order Date", type date}, {"Customer ID", type text}, {"Segment", type text}, {"City", type text}, {"State", type text}, {"Country", type text}, {"Country latitude", type number}, {"Country longitude", type number}, {"Region", type text}, {"Market", type text}, {"Subcategory", type text}, {"Category", type text}, {"Product", type text}, {"Quantity", Int64.Type}, {"Sales", Int64.Type}, {"Discount", type number}, {"Profit", type number}}),
+    #"Added Custom Column" = Table.AddColumn(#"Changed Type", "order date", each Text.Combine({Date.ToText([Order Date], "yyyy"), "-01-", Date.ToText([Order Date], "dd")}), type text),
+    #"Removed Columns" = Table.RemoveColumns(#"Added Custom Column",{"Order Date"}),
+    #"Reordered Columns" = Table.ReorderColumns(#"Removed Columns",{"Row ID", "Order ID", "order date", "Customer ID", "Segment", "City", "State", "Country", "Country latitude", "Country longitude", "Region", "Market", "Subcategory", "Category", "Product", "Quantity", "Sales", "Discount", "Profit"}),
+    #"Capitalized Each Word" = Table.TransformColumns(#"Reordered Columns",{{"Subcategory", Text.Proper, type text}}),
+    #"Merged Queries" = Table.NestedJoin(#"Capitalized Each Word", {"Segment"}, Segment, {"Segment"}, "Segment.1", JoinKind.LeftOuter),
+    #"Expanded Segment.1" = Table.ExpandTableColumn(#"Merged Queries", "Segment.1", {"Segment Id"}, {"Segment.1.Segment Id"}),
+    #"Reordered Columns1" = Table.ReorderColumns(#"Expanded Segment.1",{"Row ID", "Order ID", "order date", "Customer ID", "Segment.1.Segment Id", "Segment", "City", "State", "Country", "Country latitude", "Country longitude", "Region", "Market", "Subcategory", "Category", "Product", "Quantity", "Sales", "Discount", "Profit"}),
+    #"Renamed Columns" = Table.RenameColumns(#"Reordered Columns1",{{"Segment.1.Segment Id", "Segment Id"}}),
+    #"Removed Columns1" = Table.RemoveColumns(#"Renamed Columns",{"Segment"}),
+    #"Reordered Columns2" = Table.ReorderColumns(#"Removed Columns1",{"Row ID", "Order ID", "Segment Id", "order date", "Customer ID", "City", "State", "Country", "Country latitude", "Country longitude", "Region", "Market", "Subcategory", "Category", "Product", "Quantity", "Sales", "Discount", "Profit"}),
+    #"Merged Queries1" = Table.NestedJoin(#"Reordered Columns2", {"City"}, City, {"City"}, "City.1", JoinKind.LeftOuter),
+    #"Expanded City.1" = Table.ExpandTableColumn(#"Merged Queries1", "City.1", {"City Id"}, {"City.1.City Id"}),
+    #"Renamed Columns1" = Table.RenameColumns(#"Expanded City.1",{{"City.1.City Id", "City Id"}}),
+    #"Reordered Columns3" = Table.ReorderColumns(#"Renamed Columns1",{"Row ID", "Order ID", "Segment Id", "order date", "Customer ID", "City Id", "City", "State", "Country", "Country latitude", "Country longitude", "Region", "Market", "Subcategory", "Category", "Product", "Quantity", "Sales", "Discount", "Profit"}),
+    #"Removed Columns2" = Table.RemoveColumns(#"Reordered Columns3",{"City"}),
+    #"Merged Queries2" = Table.NestedJoin(#"Removed Columns2", {"State"}, State, {"State"}, "State.1", JoinKind.LeftOuter),
+    #"Expanded State.1" = Table.ExpandTableColumn(#"Merged Queries2", "State.1", {"State Id"}, {"State.1.State Id"}),
+    #"Renamed Columns2" = Table.RenameColumns(#"Expanded State.1",{{"State.1.State Id", "State Id"}}),
+    #"Reordered Columns4" = Table.ReorderColumns(#"Renamed Columns2",{"Row ID", "Order ID", "Segment Id", "order date", "Customer ID", "City Id", "State Id", "State", "Country", "Country latitude", "Country longitude", "Region", "Market", "Subcategory", "Category", "Product", "Quantity", "Sales", "Discount", "Profit"}),
+    #"Removed Columns3" = Table.RemoveColumns(#"Reordered Columns4",{"State"}),
+    #"Merged Queries3" = Table.NestedJoin(#"Removed Columns3", {"Country"}, Country, {"Country"}, "Country.1", JoinKind.LeftOuter),
+    #"Expanded Country.1" = Table.ExpandTableColumn(#"Merged Queries3", "Country.1", {"Country Id"}, {"Country.1.Country Id"}),
+    #"Renamed Columns3" = Table.RenameColumns(#"Expanded Country.1",{{"Country.1.Country Id", "Country Id"}}),
+    #"Reordered Columns5" = Table.ReorderColumns(#"Renamed Columns3",{"Row ID", "Order ID", "Segment Id", "order date", "Customer ID", "City Id", "State Id", "Country Id", "Country", "Country latitude", "Country longitude", "Region", "Market", "Subcategory", "Category", "Product", "Quantity", "Sales", "Discount", "Profit"}),
+    #"Removed Columns4" = Table.RemoveColumns(#"Reordered Columns5",{"Country"}),
+    #"Merged Queries4" = Table.NestedJoin(#"Removed Columns4", {"Region"}, Region, {"Region"}, "Region.1", JoinKind.LeftOuter),
+    #"Expanded Region.1" = Table.ExpandTableColumn(#"Merged Queries4", "Region.1", {"Region Id"}, {"Region.1.Region Id"}),
+    #"Renamed Columns4" = Table.RenameColumns(#"Expanded Region.1",{{"Region.1.Region Id", "Region Id"}}),
+    #"Merged Queries5" = Table.NestedJoin(#"Renamed Columns4", {"Market"}, Market, {"Market"}, "Market.1", JoinKind.LeftOuter),
+    #"Expanded Market.1" = Table.ExpandTableColumn(#"Merged Queries5", "Market.1", {"Market Id"}, {"Market.1.Market Id"}),
+    #"Renamed Columns5" = Table.RenameColumns(#"Expanded Market.1",{{"Market.1.Market Id", "Market Id"}}),
+    #"Removed Columns5" = Table.RemoveColumns(#"Renamed Columns5",{"Region", "Market"}),
+    #"Removed Other Columns" = Table.SelectColumns(#"Removed Columns5",{"Category"}),
+    #"Removed Duplicates" = Table.Distinct(#"Removed Other Columns"),
+    #"Added Index" = Table.AddIndexColumn(#"Removed Duplicates", "Index", 1, 1, Int64.Type),
+    #"Renamed Columns6" = Table.RenameColumns(#"Added Index",{{"Index", "Category Id"}})
+in
+    #"Renamed Columns6"
+
+
+
+# Products Table Code 
+
+let
+    Source = Excel.Workbook(File.Contents("C:\Users\User\Desktop\BI-RESUME-PROJECT\E-commerce_KPI_analysis_dataset.xlsx"), null, true),
+    Table2_Table = Source{[Item="Table2",Kind="Table"]}[Data],
+    #"Changed Type" = Table.TransformColumnTypes(Table2_Table,{{"Row ID", Int64.Type}, {"Order ID", type text}, {"Order Date", type date}, {"Customer ID", type text}, {"Segment", type text}, {"City", type text}, {"State", type text}, {"Country", type text}, {"Country latitude", type number}, {"Country longitude", type number}, {"Region", type text}, {"Market", type text}, {"Subcategory", type text}, {"Category", type text}, {"Product", type text}, {"Quantity", Int64.Type}, {"Sales", Int64.Type}, {"Discount", type number}, {"Profit", type number}}),
+    #"Added Custom Column" = Table.AddColumn(#"Changed Type", "order date", each Text.Combine({Date.ToText([Order Date], "yyyy"), "-01-", Date.ToText([Order Date], "dd")}), type text),
+    #"Removed Columns" = Table.RemoveColumns(#"Added Custom Column",{"Order Date"}),
+    #"Reordered Columns" = Table.ReorderColumns(#"Removed Columns",{"Row ID", "Order ID", "order date", "Customer ID", "Segment", "City", "State", "Country", "Country latitude", "Country longitude", "Region", "Market", "Subcategory", "Category", "Product", "Quantity", "Sales", "Discount", "Profit"}),
+    #"Capitalized Each Word" = Table.TransformColumns(#"Reordered Columns",{{"Subcategory", Text.Proper, type text}}),
+    #"Merged Queries" = Table.NestedJoin(#"Capitalized Each Word", {"Segment"}, Segment, {"Segment"}, "Segment.1", JoinKind.LeftOuter),
+    #"Expanded Segment.1" = Table.ExpandTableColumn(#"Merged Queries", "Segment.1", {"Segment Id"}, {"Segment.1.Segment Id"}),
+    #"Reordered Columns1" = Table.ReorderColumns(#"Expanded Segment.1",{"Row ID", "Order ID", "order date", "Customer ID", "Segment.1.Segment Id", "Segment", "City", "State", "Country", "Country latitude", "Country longitude", "Region", "Market", "Subcategory", "Category", "Product", "Quantity", "Sales", "Discount", "Profit"}),
+    #"Renamed Columns" = Table.RenameColumns(#"Reordered Columns1",{{"Segment.1.Segment Id", "Segment Id"}}),
+    #"Removed Columns1" = Table.RemoveColumns(#"Renamed Columns",{"Segment"}),
+    #"Reordered Columns2" = Table.ReorderColumns(#"Removed Columns1",{"Row ID", "Order ID", "Segment Id", "order date", "Customer ID", "City", "State", "Country", "Country latitude", "Country longitude", "Region", "Market", "Subcategory", "Category", "Product", "Quantity", "Sales", "Discount", "Profit"}),
+    #"Merged Queries1" = Table.NestedJoin(#"Reordered Columns2", {"City"}, City, {"City"}, "City.1", JoinKind.LeftOuter),
+    #"Expanded City.1" = Table.ExpandTableColumn(#"Merged Queries1", "City.1", {"City Id"}, {"City.1.City Id"}),
+    #"Renamed Columns1" = Table.RenameColumns(#"Expanded City.1",{{"City.1.City Id", "City Id"}}),
+    #"Reordered Columns3" = Table.ReorderColumns(#"Renamed Columns1",{"Row ID", "Order ID", "Segment Id", "order date", "Customer ID", "City Id", "City", "State", "Country", "Country latitude", "Country longitude", "Region", "Market", "Subcategory", "Category", "Product", "Quantity", "Sales", "Discount", "Profit"}),
+    #"Removed Columns2" = Table.RemoveColumns(#"Reordered Columns3",{"City"}),
+    #"Merged Queries2" = Table.NestedJoin(#"Removed Columns2", {"State"}, State, {"State"}, "State.1", JoinKind.LeftOuter),
+    #"Expanded State.1" = Table.ExpandTableColumn(#"Merged Queries2", "State.1", {"State Id"}, {"State.1.State Id"}),
+    #"Renamed Columns2" = Table.RenameColumns(#"Expanded State.1",{{"State.1.State Id", "State Id"}}),
+    #"Reordered Columns4" = Table.ReorderColumns(#"Renamed Columns2",{"Row ID", "Order ID", "Segment Id", "order date", "Customer ID", "City Id", "State Id", "State", "Country", "Country latitude", "Country longitude", "Region", "Market", "Subcategory", "Category", "Product", "Quantity", "Sales", "Discount", "Profit"}),
+    #"Removed Columns3" = Table.RemoveColumns(#"Reordered Columns4",{"State"}),
+    #"Merged Queries3" = Table.NestedJoin(#"Removed Columns3", {"Country"}, Country, {"Country"}, "Country.1", JoinKind.LeftOuter),
+    #"Expanded Country.1" = Table.ExpandTableColumn(#"Merged Queries3", "Country.1", {"Country Id"}, {"Country.1.Country Id"}),
+    #"Renamed Columns3" = Table.RenameColumns(#"Expanded Country.1",{{"Country.1.Country Id", "Country Id"}}),
+    #"Reordered Columns5" = Table.ReorderColumns(#"Renamed Columns3",{"Row ID", "Order ID", "Segment Id", "order date", "Customer ID", "City Id", "State Id", "Country Id", "Country", "Country latitude", "Country longitude", "Region", "Market", "Subcategory", "Category", "Product", "Quantity", "Sales", "Discount", "Profit"}),
+    #"Removed Columns4" = Table.RemoveColumns(#"Reordered Columns5",{"Country"}),
+    #"Merged Queries4" = Table.NestedJoin(#"Removed Columns4", {"Region"}, Region, {"Region"}, "Region.1", JoinKind.LeftOuter),
+    #"Expanded Region.1" = Table.ExpandTableColumn(#"Merged Queries4", "Region.1", {"Region Id"}, {"Region.1.Region Id"}),
+    #"Renamed Columns4" = Table.RenameColumns(#"Expanded Region.1",{{"Region.1.Region Id", "Region Id"}}),
+    #"Merged Queries5" = Table.NestedJoin(#"Renamed Columns4", {"Market"}, Market, {"Market"}, "Market.1", JoinKind.LeftOuter),
+    #"Expanded Market.1" = Table.ExpandTableColumn(#"Merged Queries5", "Market.1", {"Market Id"}, {"Market.1.Market Id"}),
+    #"Renamed Columns5" = Table.RenameColumns(#"Expanded Market.1",{{"Market.1.Market Id", "Market Id"}}),
+    #"Removed Columns5" = Table.RemoveColumns(#"Renamed Columns5",{"Region", "Market"}),
+    #"Removed Other Columns" = Table.SelectColumns(#"Removed Columns5",{"Product"}),
+    #"Removed Duplicates" = Table.Distinct(#"Removed Other Columns"),
+    #"Added Index" = Table.AddIndexColumn(#"Removed Duplicates", "Index", 1, 1, Int64.Type),
+    #"Renamed Columns6" = Table.RenameColumns(#"Added Index",{{"Index", "Product Id"}})
+in
+    #"Renamed Columns6"
+
